@@ -12,3 +12,33 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  age         Int
+  email       String   @unique
+  password    String
+  events      Event[]  @relation("UserEvents")
+}
+
+model Event {
+  eventId     String      @id @default(uuid())
+  eventName   String
+  description String
+  venue       String
+  time        DateTime
+  price       Float
+  category    String
+  image       String?
+  contact     String?
+  minAge      Int
+  attendees   User[]    @relation("UserEvents")
+}
+
+model Admin {
+  id Int  @id @default(autoincrement())
+  name String
+  email String @unique
+  password String
+}
