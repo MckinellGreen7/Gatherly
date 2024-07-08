@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { verify } from "hono/jwt";
-import convertFileToBase64 from "../middleware/cloudinary.middleware";
+import convertFileToBase64 from "../middleware/convertFile.middleware";
 
 export const eventRouter = new Hono<{
     Bindings: {
@@ -14,19 +14,6 @@ export const eventRouter = new Hono<{
     }
 }>
 
-interface EventData {
-    eventId?: string;    
-    eventName: string;
-    description: string;
-    venue: string;
-    time: string | Date;   
-    price: number;         
-    category: string;
-    image?: string | null; 
-    contact?: string | null;
-    minAge: number;
-    organizerId: number;   
-}
 
 
 eventRouter.use("/*",async (c,next) => {
@@ -55,10 +42,10 @@ eventRouter.post('/addEvent', async (c) => {
     try {
         const formData = await c.req.formData();
         const prisma = new PrismaClient({
-            datasourceUrl: c.env.DATABASE_URL // Assuming DATABASE_URL is defined in Cloudflare environment
+            datasourceUrl: c.env.DATABASE_URL 
         });
 
-        const adminId = c.get('mainId'); // Assuming mainId is retrieved from context (authentication)
+        const adminId = c.get('mainId'); 
         const admin = await prisma.admin.findFirst({
             where: {
                 id: adminId
@@ -74,7 +61,6 @@ eventRouter.post('/addEvent', async (c) => {
             return c.text('No image file uploaded', { status: 400 });
         }
 
-        // Convert image file to Base64 string
         const base64String = await convertFileToBase64(imageData);
 
         const newEvent = await prisma.event.create({
@@ -93,13 +79,119 @@ eventRouter.post('/addEvent', async (c) => {
         });
 
 
-        return c.json(newEvent); // Return the created event data
+        return c.json(newEvent);
     } catch (error) {
         console.error('Error adding event:', error);
         return c.json({ error: 'Failed to add event' }, 500);
     }
 });
 
+eventRouter.put("/editEvent/:id", async (c) => {
+    try{
+        const formData = await c.req.formData();
+        const eventId = c.req.param("id")
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL
+        }).$extends(withAccelerate())
+
+        const adminId = c.get('mainId')
+        const admin = await prisma.admin.findFirst({
+            where: {
+                id: adminId
+            }
+        })
+
+        if (!admin){
+            return c.text('You are not authorized to add an event.');
+        }
+
+        const imageData = formData.get('image');
+        if (!(imageData instanceof File)) {
+            return c.text('No image file uploaded', { status: 400 });
+        }
+
+        const base64String = await convertFileToBase64(imageData);
+
+        const event = await prisma.event.update({
+            where: {
+                organizerId: adminId,
+                eventId: eventId
+            },
+            data: {
+                eventName: formData.get('eventName') as string,
+                description: formData.get('description') as string,
+                venue: formData.get('venue') as string,
+                time: new Date(formData.get('time') as string),
+                price: parseInt(formData.get('price') as string, 10),
+                category: formData.get('category') as string,
+                image: base64String,
+                contact: formData.get('contact') as string | null,
+                minAge: parseInt(formData.get('minAge') as string, 10)
+            }
+        })
+
+        if (!event){
+            return c.text("Invalid")
+        }
+        return c.text(event.eventId)
+    } catch (err) {
+        return c.json({err})
+    }
+})
+
+eventRouter.delete("/deleteEvent/:id", async (c) => {
+    try{
+        const eventId = c.req.param("id")
+        
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL
+        }).$extends(withAccelerate())
+        
+        const adminId = c.get('mainId')
+        const admin = await prisma.admin.findFirst({
+            where: {
+                id: adminId
+            }
+        })
+
+        if (!admin){
+            return c.text('You are not authorized to add an event.');
+        }
+
+        const event = await prisma.event.delete({
+            where: {
+                organizerId: adminId,
+                eventId: eventId
+            }
+        })
+
+        if (!event){
+            return c.text("Invalid")
+        }
+
+        return c.text(event.eventId)
+    } catch(err){
+        return c.json({err})
+    }
+})
+
+eventRouter.get("/allEvents", async (c)=>{
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate())
+    try {
+      const event = await prisma.event.findMany();
+  
+      if (!event) {
+        return c.json({ error: 'Event not found' });
+      }
+  
+      return c.json(event);
+    } catch (error) {
+      console.error('Error fetching event:', error);
+      return c.json({ error: 'Failed to fetch event' });
+    }
+})
 
 eventRouter.get('/:eventId', async (c) => {
     const eventId = c.req.param("eventId");
@@ -110,9 +202,6 @@ eventRouter.get('/:eventId', async (c) => {
       const event = await prisma.event.findUnique({
         where: {
           eventId: eventId
-        },
-        include: {
-          // Include any related data you need here
         }
       });
   

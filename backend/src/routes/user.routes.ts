@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { sign } from "hono/jwt";
+import { sign,verify } from "hono/jwt";
 import { comparePassword, hashPassword } from "../middleware/authentication.middleware";
 
 
@@ -72,4 +72,46 @@ userRouter.post('/signin', async(c) => {
         c.status(404)
         return c.text("Invalid")
     }
+})
+
+userRouter.use("/*",async (c,next) => {
+    const authHeader = c.req.header("authorization") || ""
+    try{
+    const main = await verify(authHeader, c.env.JWT_SECRET)
+    if (main){
+        c.set('mainId', main.id)
+        await next()
+    }
+    else{
+        c.status(403)
+        return c.json({
+            message: "You are not logged in"
+        })
+    }
+    } catch(err){
+        c.status(403)
+        return c.json({
+            message: "You are not logged in"
+        })
+    }
+})
+
+userRouter.get("/profile/:id", async (c) => {
+    const userId = parseInt(c.req.param("id"))
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate())
+
+    const user = await prisma.user.findFirst({
+        where: {
+            id: userId
+        }
+    })
+
+    if (!user){
+        return c.text("you are not a admin")
+    }
+
+    return c.json(user)
+
 })
