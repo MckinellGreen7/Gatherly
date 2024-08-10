@@ -36,7 +36,7 @@ userRouter.post('/signup', async(c) => {
 
         return c.text(jwt)
     } catch(error){
-        c.status(404)
+        c.status(403)
         return c.text("Invalid")
     }
 })
@@ -55,11 +55,13 @@ userRouter.post('/signin', async(c) => {
             }
         })
         if (!user){
-            return c.text("Wrong email.")
+            c.status(411)
+            return c.text("Wrong username.")
         }
 
         const isPasswordValid = await comparePassword(body.password, user.password)
         if (!isPasswordValid){
+            c.status(411)
             return c.text("Wrong password.")
         }
         
@@ -69,7 +71,7 @@ userRouter.post('/signin', async(c) => {
 
         return c.text(jwt)
     } catch(error){
-        c.status(404)
+        c.status(403)
         return c.text("Invalid")
     }
 })

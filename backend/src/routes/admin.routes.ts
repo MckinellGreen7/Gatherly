@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { sign } from "hono/jwt";
+import { sign,verify } from "hono/jwt";
 import { comparePassword, hashPassword } from "../middleware/authentication.middleware";
 
 
@@ -35,7 +35,7 @@ adminRouter.post('/signup', async(c) => {
 
         return c.text(jwt)
     } catch(error){
-        c.status(404)
+        c.status(403)
         return c.text("Invalid")
     }
 })
@@ -54,11 +54,13 @@ adminRouter.post('/signin', async(c) => {
             }
         })
         if (!admin){
-            return c.text("Wrong email.")
+            c.status(411)
+            return c.text("Wrong username.")
         }
 
         const isPasswordValid = await comparePassword(body.password, admin.password)
         if (!isPasswordValid){
+            c.status(411)
             return c.text("Wrong password.")
         }
         
@@ -68,7 +70,49 @@ adminRouter.post('/signin', async(c) => {
 
         return c.text(jwt)
     } catch(error){
-        c.status(404)
+        c.status(403)
         return c.text("Invalid")
     }
+})
+
+adminRouter.use("/*",async (c,next) => {
+    const authHeader = c.req.header("authorization") || ""
+    try{
+    const main = await verify(authHeader, c.env.JWT_SECRET)
+    if (main){
+        c.set('mainId', main.id)
+        await next()
+    }
+    else{
+        c.status(403)
+        return c.json({
+            message: "You are not logged in"
+        })
+    }
+    } catch(err){
+        c.status(403)
+        return c.json({
+            message: "You are not logged in"
+        })
+    }
+})
+
+adminRouter.get("/profile/:id", async (c) => {
+    const adminId = parseInt(c.req.param("id"))
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate())
+
+    const admin = await prisma.admin.findFirst({
+        where: {
+            id: adminId
+        }
+    })
+
+    if (!admin){
+        return c.text("you are not a admin")
+    }
+
+    return c.json(admin)
+
 })

@@ -193,6 +193,34 @@ eventRouter.get("/allEvents", async (c)=>{
     }
 })
 
+eventRouter.get("/adminEvents", async (c) => {
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate())
+    const adminId = c.get('mainId')
+    const admin = await prisma.admin.findFirst({
+        where: {
+            id: adminId
+        }
+    })
+
+    if (!admin){
+        return c.text("You are not authorized.")
+    }
+
+    const events = await prisma.event.findMany({
+        where: {
+            organizerId: adminId
+        }
+    })
+
+    if (!event){
+        return c.text("No event exists")
+    }
+
+    return c.json({events})
+}) 
+
 eventRouter.get('/:eventId', async (c) => {
     const eventId = c.req.param("eventId");
     const prisma = new PrismaClient({
