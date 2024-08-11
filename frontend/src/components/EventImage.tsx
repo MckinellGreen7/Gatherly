@@ -18,8 +18,12 @@ const EventImage: React.FC<EventImageProps> = ({ image }) => {
   }
 
   return (
-    <div>
-      <img src={imageUrl || ''} alt="Event" style={{ maxWidth: '100%' }} />
+    <div className="w-full h-full">
+      <img 
+        src={imageUrl || ''} 
+        alt="Event" 
+        className="w-full h-full object-cover rounded"
+      />
     </div>
   );
 };

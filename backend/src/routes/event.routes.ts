@@ -198,9 +198,9 @@ eventRouter.get("/adminEvents", async (c) => {
         datasourceUrl: c.env.DATABASE_URL
     }).$extends(withAccelerate())
     const adminId = c.get('mainId')
-    const admin = await prisma.admin.findFirst({
+    const admin = await prisma.event.findFirst({
         where: {
-            id: adminId
+            organizerId: adminId
         }
     })
 
@@ -214,7 +214,7 @@ eventRouter.get("/adminEvents", async (c) => {
         }
     })
 
-    if (!event){
+    if (!events){
         return c.text("No event exists")
     }
 
