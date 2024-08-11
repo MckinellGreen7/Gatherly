@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import Navbar from '../components/Navbar';
 import Card from '../components/Card';
+import Navbar from '../components/Navbar';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import AddEditEvent from '../components/AddEditEvent';
 
 interface Event {
   eventId: string;
@@ -19,8 +20,9 @@ const AdminEvents = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  useEffect(() => {
+
     const fetchAdminEvents = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -45,8 +47,21 @@ const AdminEvents = () => {
       }
     };
 
+useEffect(() => {
     fetchAdminEvents();
-  }, []);
+}, [events]);
+
+  const onSave = () => {
+    setIsModalOpen(false);
+  };
+
+  const addEvent = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
 
   if (loading) {
     return (
@@ -80,29 +95,40 @@ const AdminEvents = () => {
     <div>
       <Navbar />
       <div className="p-4">
-        <div className='lg:px-24 px-24'>
-        <h1 className="text-2xl font-bold mb-4">Your Events</h1>
-        {events.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {events.map(event => (
-              <Card
-                key={event.eventId}
-                eventName={event.eventName}
-                description={event.description}
-                venue={event.venue}
-                time={event.time}
-                price={event.price}
-                category={event.category}
-                image={event.image}
-                minAge={event.minAge}
-              />
-            ))}
-          </div>
-        ) : (
-          <p>No events found</p>
-        )}
+        <div className="lg:px-24 px-24">
+          <h1 className="text-2xl font-bold mb-4">Your Events</h1>
+          {events.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {events.map((event) => (
+                <Card
+                  key={event.eventId}
+                  eventName={event.eventName}
+                  description={event.description}
+                  venue={event.venue}
+                  time={event.time}
+                  price={event.price}
+                  category={event.category}
+                  image={event.image}
+                  minAge={event.minAge}
+                />
+              ))}
+            </div>
+          ) : (
+            <p>No events found</p>
+          )}
         </div>
       </div>
+
+      <button
+        type="button"
+        className="fixed bottom-10 right-10 text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-lg px-6 py-4 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        onClick={addEvent}
+      >
+        Add Event
+      </button>
+
+      {/* Render AddEditEvent component when the modal is open */}
+      {isModalOpen && <AddEditEvent mode="Add Event" onSave={onSave} isModal={isModalOpen} closeModal={closeModal}/>}
     </div>
   );
 };

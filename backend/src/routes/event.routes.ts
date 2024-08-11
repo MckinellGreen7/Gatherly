@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { verify } from "hono/jwt";
+import { adjustTimeToIST } from "../utils/timeData";
 import convertFileToBase64 from "../middleware/convertFile.middleware";
 
 export const eventRouter = new Hono<{
@@ -60,15 +61,15 @@ eventRouter.post('/addEvent', async (c) => {
         if (!(imageData instanceof File)) {
             return c.text('No image file uploaded', { status: 400 });
         }
-
+        
         const base64String = await convertFileToBase64(imageData);
-
+        const time = adjustTimeToIST(formData.get('time') as string)
         const newEvent = await prisma.event.create({
             data: {
                 eventName: formData.get('eventName') as string,
                 description: formData.get('description') as string,
                 venue: formData.get('venue') as string,
-                time: new Date(formData.get('time') as string),
+                time: time,
                 price: parseInt(formData.get('price') as string, 10),
                 category: formData.get('category') as string,
                 image: base64String,
