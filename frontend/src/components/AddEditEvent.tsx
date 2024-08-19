@@ -212,9 +212,15 @@ const AddEditEvent: React.FC<AddEditEventProps> = ({mode, event, onSave, isModal
                   >
                     <option value="">Select category</option>
                     <option value="Music">Music</option>
+                    <option value="Parties">Parties</option>
+                    <option value="Adventure">Adventure</option>
                     <option value="Sports">Sports</option>
-                    <option value="Conference">Conference</option>
-                    <option value="Art">Art</option>
+                    <option value="Workshops">Workshops</option>
+                    <option value="Comedy">Comedy</option>
+                    <option value="Fitness">Fitness</option>
+                    <option value="Screening">Screening</option>
+                    <option value="Festivals">Festivals</option>
+                    <option value="Theatre">Theatre</option>
                   </select>
                 </div>
                 <div className="col-span-2">

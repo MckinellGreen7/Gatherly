@@ -9,6 +9,9 @@ export const adminRouter = new Hono<{
     Bindings: {
         DATABASE_URL: string,
         JWT_SECRET: string
+    }, 
+    Variables: {
+        mainId: number;
     }
 }>
 
@@ -97,8 +100,8 @@ adminRouter.use("/*",async (c,next) => {
     }
 })
 
-adminRouter.get("/profile/:id", async (c) => {
-    const adminId = parseInt(c.req.param("id"))
+adminRouter.get("/profile", async (c) => {
+    const adminId = c.get('mainId')
     const prisma = new PrismaClient({
         datasourceUrl: c.env.DATABASE_URL
     }).$extends(withAccelerate())

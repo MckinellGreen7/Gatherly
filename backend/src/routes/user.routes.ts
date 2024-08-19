@@ -9,6 +9,9 @@ export const userRouter = new Hono<{
     Bindings: {
         DATABASE_URL: string,
         JWT_SECRET: string
+    },
+    Variables: {
+        mainId: number;
     }
 }>
 
@@ -98,8 +101,8 @@ userRouter.use("/*",async (c,next) => {
     }
 })
 
-userRouter.get("/profile/:id", async (c) => {
-    const userId = parseInt(c.req.param("id"))
+userRouter.get("/profile", async (c) => {
+    const userId = c.get('mainId')
     const prisma = new PrismaClient({
         datasourceUrl: c.env.DATABASE_URL
     }).$extends(withAccelerate())
@@ -107,6 +110,9 @@ userRouter.get("/profile/:id", async (c) => {
     const user = await prisma.user.findFirst({
         where: {
             id: userId
+        },
+        include: {
+            events: true,
         }
     })
 

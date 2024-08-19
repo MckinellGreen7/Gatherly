@@ -49,10 +49,11 @@ const AdminEvents = () => {
 
 useEffect(() => {
     fetchAdminEvents();
-}, [events]);
+}, []);
 
   const onSave = () => {
     setIsModalOpen(false);
+    fetchAdminEvents()
   };
 
   const addEvent = () => {
@@ -93,7 +94,7 @@ useEffect(() => {
 
   return (
     <div>
-      <Navbar />
+      <Navbar mode='admin'/>
       <div className="p-4">
         <div className="lg:px-24 px-24">
           <h1 className="text-2xl font-bold mb-4">Your Events</h1>

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { PrismaClient } from "@prisma/client/edge";
+import { Prisma, PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { verify } from "hono/jwt";
 import { adjustTimeToIST } from "../utils/timeData";
@@ -199,9 +199,9 @@ eventRouter.get("/adminEvents", async (c) => {
         datasourceUrl: c.env.DATABASE_URL
     }).$extends(withAccelerate())
     const adminId = c.get('mainId')
-    const admin = await prisma.event.findFirst({
+    const admin = await prisma.admin.findFirst({
         where: {
-            organizerId: adminId
+            id: adminId
         }
     })
 
@@ -221,6 +221,31 @@ eventRouter.get("/adminEvents", async (c) => {
 
     return c.json({events})
 }) 
+
+eventRouter.get('/trendingEvents', async (c) => {
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate());
+
+    try {
+        const trendingEvents = await prisma.event.findMany({
+            orderBy: {
+                attendees: {
+                    _count: 'desc'
+                }
+            },
+            include: {
+                attendees: true,
+                organizer: true 
+            }
+        });
+
+        return c.json(trendingEvents);
+    } catch (e) {
+        console.error('Error fetching trending events:', e);
+        return c.json({ error: 'Failed to fetch trending events' });
+    }
+})
 
 eventRouter.get('/:eventId', async (c) => {
     const eventId = c.req.param("eventId");
@@ -244,3 +269,80 @@ eventRouter.get('/:eventId', async (c) => {
       return c.json({ error: 'Failed to fetch event' });
     }
   });
+
+
+  eventRouter.post('/enroll', async (c) => {
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate());
+    const userId = c.get('mainId')
+    const { eventId } = await c.req.json();
+
+    try {
+        const event = await prisma.event.findUnique({
+            where: { eventId },
+        });
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!event || !user) {
+            c.status(404)
+            return c.json({ error: 'Event or user not found' });
+        }
+
+        await prisma.event.update({
+            where: { eventId },
+            data: {
+                attendees: {
+                    connect: { id: userId },
+                },
+            },
+        });
+
+        return c.json({ message: 'User enrolled in event successfully' });
+    } catch (error) {
+        console.error('Error enrolling user:', error);
+        c.status(500)
+        return c.json({ error: 'Failed to enroll user' });
+    }
+});
+
+
+eventRouter.post('/unroll', async (c) => {
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate());
+    
+    const userId = c.get('mainId')
+    const { eventId } = await c.req.json();
+
+    try {
+        const event = await prisma.event.findUnique({
+            where: { eventId },
+        });
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!event || !user) {
+            c.status(404)
+            return c.json({ error: 'Event or user not found' });
+        }
+
+        await prisma.event.update({
+            where: { eventId },
+            data: {
+                attendees: {
+                    disconnect: { id: userId },
+                },
+            },
+        });
+
+        return c.json({ message: 'User unrolled from event successfully' });
+    } catch (error) {
+        console.error('Error unrolling user:', error);
+        c.status(500)
+        return c.json({ error: 'Failed to unroll user' });
+    }
+});

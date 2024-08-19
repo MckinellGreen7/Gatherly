@@ -31,7 +31,7 @@ const Auth: React.FC<AuthProps> = ({ mode, userType: initialUserType }) => {
         const token = response.data;
         console.log(token);
         localStorage.setItem("token", token);
-        navigate(`/${userType}/dashboard`);
+        userType=='admin' ? navigate(`/${userType}/dashboard`) : navigate(`/${userType}/events`);
       } else {
         alert(`${mode.charAt(0).toUpperCase() + mode.slice(1)} failed. Please check your details.`);
       }

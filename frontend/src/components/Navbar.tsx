@@ -1,7 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
-const Navbar = () => {
+interface NavbarProps {
+  mode: "admin" | "user";
+}
+
+const Navbar: React.FC<NavbarProps> = ({ mode }) => {
   const location = useLocation();
 
   const getLinkClass = (path: string) =>
@@ -12,7 +16,7 @@ const Navbar = () => {
   return (
     <nav className="bg-white border border-b-1 shadow-md border-gray-200 dark:bg-gray-900">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-        <Link to="/admin/dashboard">
+        <Link to={mode === "admin" ? "/admin/dashboard" : "/user/events"}>
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
             <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
               Gatherly
@@ -100,21 +104,35 @@ const Navbar = () => {
           id="navbar-search"
         >
           <ul className="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+            {mode === "admin" && (
+              <li>
+                <Link to="/admin/dashboard">
+                  <span className={getLinkClass("/admin/dashboard")}>
+                    Dashboard
+                  </span>
+                </Link>
+              </li>
+            )}
             <li>
-              <Link to="/admin/dashboard">
-                <span className={getLinkClass("/admin/dashboard")}>
-                  Dashboard
+              <Link to={mode === "admin" ? "/admin/events" : "/user/events"}>
+                <span
+                  className={getLinkClass(
+                    mode === "admin" ? "/admin/events" : "/user/events"
+                  )}
+                >
+                  Events
                 </span>
               </Link>
             </li>
             <li>
-              <Link to="/admin/events">
-                <span className={getLinkClass("/admin/events")}>Events</span>
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/profile">
-                <span className={getLinkClass("/admin/profile")}>Profile</span>
+              <Link to={mode === "admin" ? "/admin/profile" : "/user/profile"}>
+                <span
+                  className={getLinkClass(
+                    mode === "admin" ? "/admin/profile" : "/user/profile"
+                  )}
+                >
+                  Profile
+                </span>
               </Link>
             </li>
           </ul>
